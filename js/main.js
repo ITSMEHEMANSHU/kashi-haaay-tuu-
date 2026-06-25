@@ -16,15 +16,11 @@ function resizeCanvas() {
     displayWidth = window.innerWidth;
     displayHeight = window.innerHeight;
     
-    // Set canvas actual size (higher res for retina)
     canvas.width = displayWidth * dpr;
     canvas.height = displayHeight * dpr;
-    
-    // Set canvas display size
     canvas.style.width = displayWidth + 'px';
     canvas.style.height = displayHeight + 'px';
     
-    // Reset transform and scale for retina
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
     
@@ -47,21 +43,71 @@ function init() {
 
     requestAnimationFrame(animate);
 
+    // Start the full sequence
+    startSequence();
+}
+
+function startSequence() {
+    // Phase 1: Rain is already falling, fire is dampened (cooling period)
+    // Type the first long message about the cooling/off-day phase
     setTimeout(() => {
-        typewriter.type("SYSTEM CALIBRATION REQUIRED...\n\nANALYZING CURRENT TRAJECTORY.", 60, () => {
-            weather.transitionToSun();
-            flames.transitionToSteady();
+        typewriter.type(FIRST_MESSAGE, 45, () => {
+            // Message done typing, wait 2 seconds, then show countdown
+            setTimeout(() => {
+                typewriter.fadeOut(1.5, () => {
+                    // Show 10 second countdown
+                    typewriter.showCountdown(10, () => {
+                        // Countdown done - transition weather and flames
+                        weather.transitionToSun();
+                        flames.transitionToSteady();
+                        
+                        // Wait for transition to complete (6 seconds)
+                        setTimeout(() => {
+                            startSecondSequence();
+                        }, 7000);
+                    });
+                });
+            }, 2000);
         });
     }, 1500);
 }
 
+function startSecondSequence() {
+    // Phase 2: Sun is out, flames are full intensity
+    // Type the three paragraphs one by one
+    
+    // First paragraph
+    typewriter.type(SECOND_MESSAGE_PART1, 50, () => {
+        setTimeout(() => {
+            typewriter.fadeOut(1.5, () => {
+                // Second paragraph
+                setTimeout(() => {
+                    typewriter.type(SECOND_MESSAGE_PART2, 50, () => {
+                        setTimeout(() => {
+                            typewriter.fadeOut(1.5, () => {
+                                // Third paragraph
+                                setTimeout(() => {
+                                    typewriter.type(SECOND_MESSAGE_PART3, 50, () => {
+                                        // Keep final message on screen longer
+                                        setTimeout(() => {
+                                            typewriter.fadeOut(3);
+                                        }, 5000);
+                                    });
+                                }, 500);
+                            });
+                        }, 2500);
+                    });
+                }, 500);
+            });
+        }, 3000);
+    });
+}
+
 function animate() {
-    // Clear using display dimensions
     ctx.clearRect(0, 0, displayWidth, displayHeight);
     
     weather.draw();
     
-    // Pass storm intensity for flame dampening
     let flameIntensity = 1;
     if (weather.isRaining && weather.stormIntensity > 0.5) {
         flameIntensity = 0.4;
@@ -72,5 +118,52 @@ function animate() {
 
     requestAnimationFrame(animate);
 }
+
+// Message content
+const FIRST_MESSAGE = `okay now listen carefully to me okay this is not smtg that will require your emotional energy ...just listen to me okay...
+
+i dont exactly know whats the cause ...but as much as ik on that basis and as you told me earlier too see ik we're moving into a new phase of life and right now things little bit not going exactly as we had planned
+
+ik tanvi you had planned that just as you'd go back home you'd start onto dsa and m3 right but i can understand you must be tired kinda doing that much all task thinking most students amongst us have already started
+
+so what i am going to tell you now listen ....
+
+right now as you can see its raining and below you could see flames which are burning at little low intensity aint the way how a fire should burn right ....
+
+tell me whenever flames keep burning its obvious right that after some time their intensity would go low i am not saying totally off the fire ain't turning off look....
+
+so just similarly consider yourself in an off-day phase ....you are also just like these flames right ....
+
+whenever you are consistent and at potent energy levels you truly burn to execute all those things ...you're sharp , grasping power is high .....
+
+but when you are continously doing things just burning and burning ofc you'll be little weak right not saying entirely shut off just a recalibration period we could.....
+
+in this 6 month internship i have seen you burning constantly doing all those activities you didn't even took many days off only if it was clg stuff or hackathons right....
+
+others whom have started by now they haven't done the same ....they have done all that enjoyment too going here and there taking leaves , wfhs....
+
+by saying this i am not saying this as an excuse but what i am trying to imply is you and them there is a big difference ....
+
+in short i'll say again that what takes them 10 days will take you 1-2 days....
+
+and yes i had also told you to take days or an entire week off right then why to feel tensed or all pressured na....
+
+also here again you'd see once the message ends smtg will happen that will also imply smtg ....
+
+(right now you know the raining is like your off time...the fire is you....low but not totally shut down)`;
+
+const SECOND_MESSAGE_PART1 = `as you saw the rain turned off we are back to our usual weather right ....if you notice look at the flames they are back to normal ...burning with full intensity ....thats what i am saying ...once your off-phase ends you'll start with double charging ...more strength ....
+
+i hope you get to know it again that you ain't late just you're taking time for your mind recalibration.....and don't doubt yourself...ik this gap smtimes might make you overthink abt the time we spend together too....and ig yesterday out of this you said that.....`;
+
+const SECOND_MESSAGE_PART2 = `see i don't know right now if telling you this you understood that you're not less than anyone .....from this i want you to know that you are much better than everyone....i'm always with you ....the way you allow me to think out of the box the same way i want you to know abt your own strength .....plus you deserve this gap after that much hardwork also on high scoring....
+
+i can understand you are doing lot of work though but don't have any overload on your mind by worrying.....and allow me to keep few things regarding to learning a surprise everytime you ask me wyd i can't go on saying "planning our way to cracking an internship with high ppo".....`;
+
+const SECOND_MESSAGE_PART3 = `you ain't going to clg to be part of a group ...the students there must realise you're far above their level....knowing you in the competition must make them lose the hope....the way you want me to be strong and successful this is what i want you to be..... 
+
+so don't feel you'll be distracted ...ig you forgot the way i could care abt you like mumma na the same way right now being strict and practically telling you too... this is also what i have.....apart from the emotional connection we share we also share these goals....
+
+lets hit out prime .....and dw i am your frnd ....more than i am your 'aga' and you my 'aaho'`;
 
 window.onload = init;

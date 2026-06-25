@@ -1,5 +1,5 @@
 class WeatherSystem {
-    constructor(canvas, ctx, isMobile = false) {
+    constructor(canvas, ctx, isMobile = false, displayWidth, displayHeight) {
         this.canvas = canvas;
         this.ctx = ctx;
         this.raindrops = [];
@@ -7,30 +7,35 @@ class WeatherSystem {
         this.stormIntensity = 1;
         this.sunGlow = 0;
         this.isMobile = isMobile;
+        this.displayWidth = displayWidth;
+        this.displayHeight = displayHeight;
         
         this.sky = {
             topR: 8, topG: 12, topB: 20,
             botR: 20, botG: 25, botB: 35
         };
 
-        // MOBILE: Reduce rain count by 60%
-        const dropCount = this.isMobile ? 200 : 500;
+        // More rain for mobile to cover screen properly
+        const dropCount = this.isMobile ? 350 : 500;
         
         for (let i = 0; i < dropCount; i++) {
             let dropType = Math.random();
             let thickness, length, speed, opacity;
             
-            if (dropType < 0.3) {
+            if (dropType < 0.2) {
+                // Light drizzle
                 thickness = 0.3 + Math.random() * 0.5;
                 length = 10 + Math.random() * 15;
                 speed = 10 + Math.random() * 10;
                 opacity = Math.random() * 0.1 + 0.05;
-            } else if (dropType < 0.7) {
+            } else if (dropType < 0.6) {
+                // Medium rain
                 thickness = 0.5 + Math.random() * 1;
                 length = 20 + Math.random() * 25;
                 speed = 15 + Math.random() * 15;
                 opacity = Math.random() * 0.15 + 0.1;
             } else {
+                // Heavy drops
                 thickness = 1 + Math.random() * 2;
                 length = 30 + Math.random() * 40;
                 speed = 22 + Math.random() * 18;
@@ -38,25 +43,23 @@ class WeatherSystem {
             }
             
             this.raindrops.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
+                x: Math.random() * displayWidth * 1.2, // Spread beyond screen edges
+                y: Math.random() * displayHeight,
                 speed: speed,
                 length: length,
                 thickness: thickness,
                 opacity: opacity
             });
         }
-        
-        // Cache gradient colors to avoid string concatenation every frame
-        this.cachedRainColors = null;
-        this.cachedSkyColors = null;
     }
 
     resize() {
-        // Update all raindrop positions for new canvas size
+        this.displayWidth = window.innerWidth;
+        this.displayHeight = window.innerHeight;
+        
         for (let drop of this.raindrops) {
-            drop.x = Math.random() * this.canvas.width;
-            drop.y = Math.random() * this.canvas.height;
+            drop.x = Math.random() * this.displayWidth * 1.2;
+            drop.y = Math.random() * this.displayHeight;
         }
     }
 
@@ -75,8 +78,8 @@ class WeatherSystem {
     }
 
     draw() {
-        const w = this.canvas.width / (window.devicePixelRatio || 1);
-        const h = this.canvas.height / (window.devicePixelRatio || 1);
+        const w = this.displayWidth;
+        const h = this.displayHeight;
         
         // Sky gradient
         let bgGradient = this.ctx.createLinearGradient(0, 0, 0, h);
@@ -85,18 +88,20 @@ class WeatherSystem {
         this.ctx.fillStyle = bgGradient;
         this.ctx.fillRect(0, 0, w, h);
 
-        // Sun - only if visible
+        // Sun
         if (this.sunGlow > 0.01) {
             this.ctx.save();
             this.ctx.globalCompositeOperation = 'screen';
             
             let cx = w / 2;
-            let cy = h * 0.4;
+            let cy = h * 0.35;
+            // Larger sun on mobile to be visible
+            let sunRadius = this.isMobile ? 120 : 100;
             
-            let sunGrad = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, 100);
-            sunGrad.addColorStop(0, `rgba(255, 200, 100, ${this.sunGlow * 0.4})`);
-            sunGrad.addColorStop(0.3, `rgba(255, 150, 50, ${this.sunGlow * 0.2})`);
-            sunGrad.addColorStop(0.7, `rgba(255, 80, 20, ${this.sunGlow * 0.08})`);
+            let sunGrad = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, sunRadius);
+            sunGrad.addColorStop(0, `rgba(255, 200, 100, ${this.sunGlow * 0.5})`);
+            sunGrad.addColorStop(0.3, `rgba(255, 150, 50, ${this.sunGlow * 0.25})`);
+            sunGrad.addColorStop(0.7, `rgba(255, 80, 20, ${this.sunGlow * 0.1})`);
             sunGrad.addColorStop(1, `rgba(255, 40, 10, 0)`);
             
             this.ctx.fillStyle = sunGrad;
@@ -108,34 +113,26 @@ class WeatherSystem {
         // Rain
         if (this.stormIntensity > 0.01) {
             this.ctx.save();
-            // Use 'lighter' instead of 'screen' on mobile (better performance)
-            this.ctx.globalCompositeOperation = this.isMobile ? 'lighter' : 'screen';
+            this.ctx.globalCompositeOperation = 'screen';
             
             const windAngle = 0.15;
             
             for (let i = 0; i < this.raindrops.length; i++) {
                 let drop = this.raindrops[i];
                 
-                // Skip off-screen drops on mobile
-                if (this.isMobile && (drop.y < -100 || drop.y > h + 100)) continue;
-                
                 let windX = Math.sin(windAngle) * drop.length * 0.3;
                 
-                // MOBILE: Use solid color instead of gradient for rain
-                if (this.isMobile) {
-                    this.ctx.strokeStyle = `rgba(190, 210, 240, ${drop.opacity * this.stormIntensity * 0.6})`;
-                } else {
-                    let gradient = this.ctx.createLinearGradient(
-                        drop.x, drop.y,
-                        drop.x + windX, drop.y + drop.length
-                    );
-                    gradient.addColorStop(0, `rgba(170, 195, 230, 0)`);
-                    gradient.addColorStop(0.3, `rgba(180, 205, 240, ${drop.opacity * this.stormIntensity * 0.5})`);
-                    gradient.addColorStop(0.7, `rgba(200, 220, 250, ${drop.opacity * this.stormIntensity * 0.8})`);
-                    gradient.addColorStop(1, `rgba(220, 235, 255, ${drop.opacity * this.stormIntensity})`);
-                    this.ctx.strokeStyle = gradient;
-                }
+                // Full gradient even on mobile for proper look
+                let gradient = this.ctx.createLinearGradient(
+                    drop.x, drop.y,
+                    drop.x + windX, drop.y + drop.length
+                );
+                gradient.addColorStop(0, `rgba(170, 195, 230, 0)`);
+                gradient.addColorStop(0.3, `rgba(180, 205, 240, ${drop.opacity * this.stormIntensity * 0.5})`);
+                gradient.addColorStop(0.7, `rgba(200, 220, 250, ${drop.opacity * this.stormIntensity * 0.8})`);
+                gradient.addColorStop(1, `rgba(220, 235, 255, ${drop.opacity * this.stormIntensity})`);
                 
+                this.ctx.strokeStyle = gradient;
                 this.ctx.lineWidth = drop.thickness;
                 this.ctx.beginPath();
                 this.ctx.moveTo(drop.x, drop.y);
@@ -147,7 +144,7 @@ class WeatherSystem {
                 if (drop.y > h) {
                     if (this.isRaining) {
                         drop.y = -drop.length - Math.random() * 80;
-                        drop.x = Math.random() * w;
+                        drop.x = Math.random() * w * 1.2;
                     } else {
                         this.raindrops.splice(i, 1);
                         i--;
@@ -158,16 +155,14 @@ class WeatherSystem {
             this.ctx.restore();
         }
 
-        // Vignette - skip on very low-end mobile
-        if (!this.isMobile || this.sunGlow < 0.5) {
-            let vignette = this.ctx.createRadialGradient(
-                w / 2, h / 2, h * 0.3,
-                w / 2, h / 2, h * 1.2
-            );
-            vignette.addColorStop(0, 'rgba(0,0,0,0)');
-            vignette.addColorStop(1, `rgba(0,0,0,${0.7 - (this.sunGlow * 0.3)})`);
-            this.ctx.fillStyle = vignette;
-            this.ctx.fillRect(0, 0, w, h);
-        }
+        // Vignette
+        let vignette = this.ctx.createRadialGradient(
+            w / 2, h / 2, h * 0.3,
+            w / 2, h / 2, h * 1.2
+        );
+        vignette.addColorStop(0, 'rgba(0,0,0,0)');
+        vignette.addColorStop(1, `rgba(0,0,0,${0.7 - (this.sunGlow * 0.3)})`);
+        this.ctx.fillStyle = vignette;
+        this.ctx.fillRect(0, 0, w, h);
     }
 }

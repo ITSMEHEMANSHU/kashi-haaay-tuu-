@@ -211,6 +211,6 @@ const SECOND_MESSAGE_PART3 = `you ain't going to clg to be part of a group ...th
 
 so don't feel you'll be distracted ...ig you forgot the way i could care abt you like mumma na the same way right now being strict and practically telling you too... this is also what i have.....apart from the emotional connection we share we also share these goals....
 
-lets hit out prime .....and dw i am your frnd ....more than i am your 'aga' and you my 'aaho'`;
+lets hit out prime .....and dw i am your frnd ....more than that i am your 'aga' and you my 'aaho'.....kalji ghe tanvi.....i'm right by your side ....my hand on your head`;
 
 window.onload = init;

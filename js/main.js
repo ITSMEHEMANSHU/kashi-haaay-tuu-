@@ -48,6 +48,9 @@ function initAudio() {
     bgMusic = document.getElementById('bgMusic');
     musicToggle = document.getElementById('musicToggle');
     
+    // Set start time to 2:30
+    bgMusic.currentTime = 150; // 150 seconds = 2:30
+    
     const playPromise = bgMusic.play();
     
     if (playPromise !== undefined) {
@@ -73,8 +76,10 @@ function initAudio() {
         }
     });
     
+    // For mobile: play on first touch, also start at 2:30
     document.addEventListener('touchstart', () => {
         if (bgMusic.paused) {
+            bgMusic.currentTime = 150;
             bgMusic.play().then(() => {
                 musicToggle.textContent = '🔊';
                 musicToggle.classList.remove('muted');

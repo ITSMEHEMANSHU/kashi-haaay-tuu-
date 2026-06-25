@@ -15,7 +15,6 @@ class WeatherSystem {
             botR: 20, botG: 25, botB: 35
         };
 
-        // More rain for mobile to cover screen properly
         const dropCount = this.isMobile ? 350 : 500;
         
         for (let i = 0; i < dropCount; i++) {
@@ -23,19 +22,16 @@ class WeatherSystem {
             let thickness, length, speed, opacity;
             
             if (dropType < 0.2) {
-                // Light drizzle
                 thickness = 0.3 + Math.random() * 0.5;
                 length = 10 + Math.random() * 15;
                 speed = 10 + Math.random() * 10;
                 opacity = Math.random() * 0.1 + 0.05;
             } else if (dropType < 0.6) {
-                // Medium rain
                 thickness = 0.5 + Math.random() * 1;
                 length = 20 + Math.random() * 25;
                 speed = 15 + Math.random() * 15;
                 opacity = Math.random() * 0.15 + 0.1;
             } else {
-                // Heavy drops
                 thickness = 1 + Math.random() * 2;
                 length = 30 + Math.random() * 40;
                 speed = 22 + Math.random() * 18;
@@ -43,7 +39,7 @@ class WeatherSystem {
             }
             
             this.raindrops.push({
-                x: Math.random() * displayWidth * 1.2, // Spread beyond screen edges
+                x: Math.random() * displayWidth * 1.2,
                 y: Math.random() * displayHeight,
                 speed: speed,
                 length: length,
@@ -88,15 +84,15 @@ class WeatherSystem {
         this.ctx.fillStyle = bgGradient;
         this.ctx.fillRect(0, 0, w, h);
 
-        // Sun
+        // Sun - positioned higher on mobile to leave room for text
         if (this.sunGlow > 0.01) {
             this.ctx.save();
             this.ctx.globalCompositeOperation = 'screen';
             
             let cx = w / 2;
-            let cy = h * 0.35;
-            // Larger sun on mobile to be visible
-            let sunRadius = this.isMobile ? 120 : 100;
+            // Mobile: sun at 25% from top, Desktop: 35% from top
+            let cy = this.isMobile ? h * 0.25 : h * 0.35;
+            let sunRadius = this.isMobile ? 100 : 100;
             
             let sunGrad = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, sunRadius);
             sunGrad.addColorStop(0, `rgba(255, 200, 100, ${this.sunGlow * 0.5})`);
@@ -122,7 +118,6 @@ class WeatherSystem {
                 
                 let windX = Math.sin(windAngle) * drop.length * 0.3;
                 
-                // Full gradient even on mobile for proper look
                 let gradient = this.ctx.createLinearGradient(
                     drop.x, drop.y,
                     drop.x + windX, drop.y + drop.length

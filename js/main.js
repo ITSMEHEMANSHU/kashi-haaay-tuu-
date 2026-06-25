@@ -5,6 +5,10 @@ let weather, flames, typewriter;
 let isMobile = false;
 let dpr = 1;
 let displayWidth, displayHeight;
+let textContainer;
+let nextButton;
+let bgMusic;
+let musicToggle;
 
 function detectMobile() {
     isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
@@ -28,9 +32,65 @@ function resizeCanvas() {
     if (weather) weather.resize();
 }
 
+function moveContainerForSun() {
+    // Add sunMode class to move container up and button above flames
+    if (textContainer) textContainer.classList.add('sunMode');
+    if (nextButton) nextButton.classList.add('sunMode');
+}
+
+function moveContainerForRain() {
+    // Remove sunMode class for rain sequence
+    if (textContainer) textContainer.classList.remove('sunMode');
+    if (nextButton) nextButton.classList.remove('sunMode');
+}
+
+function initAudio() {
+    bgMusic = document.getElementById('bgMusic');
+    musicToggle = document.getElementById('musicToggle');
+    
+    const playPromise = bgMusic.play();
+    
+    if (playPromise !== undefined) {
+        playPromise.then(() => {
+            musicToggle.textContent = '🔊';
+            musicToggle.classList.remove('muted');
+        }).catch(() => {
+            musicToggle.textContent = '🔇';
+            musicToggle.classList.add('muted');
+        });
+    }
+    
+    musicToggle.addEventListener('click', () => {
+        if (bgMusic.paused) {
+            bgMusic.play().then(() => {
+                musicToggle.textContent = '🔊';
+                musicToggle.classList.remove('muted');
+            });
+        } else {
+            bgMusic.pause();
+            musicToggle.textContent = '🔇';
+            musicToggle.classList.add('muted');
+        }
+    });
+    
+    document.addEventListener('touchstart', () => {
+        if (bgMusic.paused) {
+            bgMusic.play().then(() => {
+                musicToggle.textContent = '🔊';
+                musicToggle.classList.remove('muted');
+            }).catch(() => {});
+        }
+    }, { once: true });
+}
+
 function init() {
     detectMobile();
     resizeCanvas();
+    
+    textContainer = document.getElementById('textContainer');
+    nextButton = document.getElementById('nextButton');
+    
+    initAudio();
     
     window.addEventListener('resize', () => {
         detectMobile();
@@ -39,67 +99,49 @@ function init() {
 
     weather = new WeatherSystem(canvas, ctx, isMobile, displayWidth, displayHeight);
     flames = new FlameSystem(canvas, ctx, isMobile, displayWidth, displayHeight);
-    typewriter = new Typewriter('textContainer');
+    typewriter = new Typewriter('textContainer', 'nextButton');
 
     requestAnimationFrame(animate);
 
-    // Start the full sequence
     startSequence();
 }
 
 function startSequence() {
-    // Phase 1: Rain is already falling, fire is dampened (cooling period)
-    // Type the first long message about the cooling/off-day phase
+    // Rain - container and button stay low
+    moveContainerForRain();
+    
     setTimeout(() => {
         typewriter.type(FIRST_MESSAGE, 45, () => {
-            // Message done typing, wait 2 seconds, then show countdown
-            setTimeout(() => {
-                typewriter.fadeOut(1.5, () => {
-                    // Show 10 second countdown
-                    typewriter.showCountdown(10, () => {
-                        // Countdown done - transition weather and flames
-                        weather.transitionToSun();
-                        flames.transitionToSteady();
-                        
-                        // Wait for transition to complete (6 seconds)
-                        setTimeout(() => {
-                            startSecondSequence();
-                        }, 7000);
-                    });
-                });
-            }, 2000);
+            typewriter.fadeOut(1.5, () => {
+                weather.transitionToSun();
+                flames.transitionToSteady();
+                
+                // Sun - move container and button up
+                moveContainerForSun();
+                
+                setTimeout(() => {
+                    startSecondSequence();
+                }, 7000);
+            });
         });
     }, 1500);
 }
 
 function startSecondSequence() {
-    // Phase 2: Sun is out, flames are full intensity
-    // Type the three paragraphs one by one
-    
-    // First paragraph
     typewriter.type(SECOND_MESSAGE_PART1, 50, () => {
-        setTimeout(() => {
-            typewriter.fadeOut(1.5, () => {
-                // Second paragraph
-                setTimeout(() => {
-                    typewriter.type(SECOND_MESSAGE_PART2, 50, () => {
+        typewriter.fadeOut(1.5, () => {
+            setTimeout(() => {
+                typewriter.type(SECOND_MESSAGE_PART2, 50, () => {
+                    typewriter.fadeOut(1.5, () => {
                         setTimeout(() => {
-                            typewriter.fadeOut(1.5, () => {
-                                // Third paragraph
-                                setTimeout(() => {
-                                    typewriter.type(SECOND_MESSAGE_PART3, 50, () => {
-                                        // Keep final message on screen longer
-                                        setTimeout(() => {
-                                            typewriter.fadeOut(3);
-                                        }, 5000);
-                                    });
-                                }, 500);
+                            typewriter.type(SECOND_MESSAGE_PART3, 50, () => {
+                                typewriter.fadeOut(3);
                             });
-                        }, 2500);
+                        }, 500);
                     });
-                }, 500);
-            });
-        }, 3000);
+                });
+            }, 500);
+        });
     });
 }
 
@@ -158,7 +200,7 @@ i hope you get to know it again that you ain't late just you're taking time for 
 
 const SECOND_MESSAGE_PART2 = `see i don't know right now if telling you this you understood that you're not less than anyone .....from this i want you to know that you are much better than everyone....i'm always with you ....the way you allow me to think out of the box the same way i want you to know abt your own strength .....plus you deserve this gap after that much hardwork also on high scoring....
 
-i can understand you are doing lot of work though but don't have any overload on your mind by worrying.....and allow me to keep few things regarding to learning a surprise everytime you ask me wyd i can't go on saying "planning our way to cracking an internship with high ppo".....`;
+i can understand you are doing lot of work though but don't have any overload on your mind by worrying.....and allow me to keep few things regarding to learning a surprise everytime you ask me wyd i can't go on saying "planning our way to cracking an internship with high ppto".....`;
 
 const SECOND_MESSAGE_PART3 = `you ain't going to clg to be part of a group ...the students there must realise you're far above their level....knowing you in the competition must make them lose the hope....the way you want me to be strong and successful this is what i want you to be..... 
 

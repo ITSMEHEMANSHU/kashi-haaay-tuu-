@@ -1,72 +1,74 @@
 class Typewriter {
-    constructor(containerId) {
+    constructor(containerId, buttonId = 'nextButton') {
         this.container = document.getElementById(containerId);
+        this.button = document.getElementById(buttonId);
         this.typingInterval = null;
         this.currentTimeout = null;
+        this.onNextCallback = null;
+        
+        // Bind next button
+        this.button.addEventListener('click', () => {
+            this.hideButton();
+            if (this.onNextCallback) {
+                const callback = this.onNextCallback;
+                this.onNextCallback = null;
+                callback();
+            }
+        });
     }
 
-    // Type text with specific speed, then callback
+    // Type text with specific speed
     type(text, speed, onComplete) {
         this.clear();
+        this.hideButton();
         this.container.style.opacity = 1;
         let i = 0;
-        let charCount = 0;
         
         this.typingInterval = setInterval(() => {
             if (i < text.length) {
-                // Handle newlines properly
                 if (text.charAt(i) === '\n') {
                     this.container.innerHTML += '<br>';
                 } else {
                     this.container.innerHTML += text.charAt(i);
                 }
                 i++;
-                charCount++;
                 
                 // Auto-scroll to bottom as text appears
                 this.container.scrollTop = this.container.scrollHeight;
             } else {
                 clearInterval(this.typingInterval);
-                if (onComplete) onComplete();
+                
+                // Show Next button when typing completes
+                this.showButton();
+                
+                if (onComplete) {
+                    // Store callback, but don't execute until Next is clicked
+                    this.onNextCallback = onComplete;
+                }
             }
         }, speed);
     }
 
-    // Show countdown timer
-    showCountdown(seconds, onComplete) {
-        this.clear();
-        this.container.style.opacity = 1;
-        this.container.style.fontSize = '3rem';
-        this.container.style.fontWeight = '200';
-        this.container.style.letterSpacing = '4px';
-        
-        let remaining = seconds;
-        this.container.innerHTML = remaining;
-        
-        const countInterval = setInterval(() => {
-            remaining--;
-            if (remaining <= 0) {
-                clearInterval(countInterval);
-                this.container.innerHTML = '';
-                // Reset font styles for next text
-                this.container.style.fontSize = '';
-                this.container.style.fontWeight = '';
-                this.container.style.letterSpacing = '';
-                if (onComplete) onComplete();
-            } else {
-                this.container.innerHTML = remaining;
-            }
-        }, 1000);
+    // Show the Next button
+    showButton() {
+        this.button.classList.add('show');
+    }
+
+    // Hide the Next button
+    hideButton() {
+        this.button.classList.remove('show');
     }
 
     // Fade out current text
     fadeOut(duration, onComplete) {
+        this.hideButton();
         gsap.to(this.container, {
             opacity: 0,
             duration: duration || 2,
             ease: "power2.inOut",
             onComplete: () => {
                 this.container.innerHTML = '';
+                this.container.style.opacity = 1;
                 if (onComplete) onComplete();
             }
         });
@@ -78,9 +80,14 @@ class Typewriter {
         if (this.currentTimeout) clearTimeout(this.currentTimeout);
         this.container.innerHTML = '';
         this.container.style.opacity = 1;
+        this.hideButton();
     }
 
-    // Full cleanup
+    // Allow scrolling back up
+    enableScroll() {
+        this.container.style.pointerEvents = 'auto';
+    }
+
     destroy() {
         this.clear();
         gsap.killTweensOf(this.container);

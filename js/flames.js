@@ -13,23 +13,23 @@ class FlameSystem {
         this.displayHeight = displayHeight;
         this.yBase = displayHeight;
         
-        // Pre-render gradients cache for mobile
+        // Pre-created offscreen canvas for gradient caching
         this.gradientCache = {};
+        this.frameCount = 0;
         
         this.initFlameSources();
     }
     
     initFlameSources() {
         this.flameSources = [];
-        const sourceCount = this.isMobile ? 6 : 8;
-        const spacing = this.displayWidth / sourceCount;
+        const sourceCount = 8;
         
         for (let i = 0; i < sourceCount; i++) {
             this.flameSources.push({
-                x: spacing * i + spacing / 2 + (Math.random() * 40 - 20),
+                x: (this.displayWidth / sourceCount) * i + (Math.random() * 60 - 30),
                 intensity: 0.5 + Math.random() * 0.5,
                 height: 0.5 + Math.random() * 0.5,
-                width: 20 + Math.random() * 60
+                width: 20 + Math.random() * 80
             });
         }
     }
@@ -38,23 +38,19 @@ class FlameSystem {
         this.displayWidth = window.innerWidth;
         this.displayHeight = window.innerHeight;
         this.yBase = this.displayHeight;
-        this.gradientCache = {}; // Clear cache on resize
+        this.gradientCache = {};
         this.initFlameSources();
     }
 
     addParticle(source) {
+        let sizeVariation = Math.random();
         let size;
-        if (this.isMobile) {
-            // Slightly smaller but still varied on mobile
-            let r = Math.random();
-            if (r < 0.3) size = Math.random() * 8 + 4;
-            else if (r < 0.7) size = Math.random() * 18 + 10;
-            else size = Math.random() * 30 + 20;
+        if (sizeVariation < 0.3) {
+            size = Math.random() * 10 + 5;
+        } else if (sizeVariation < 0.7) {
+            size = Math.random() * 20 + 10;
         } else {
-            let r = Math.random();
-            if (r < 0.3) size = Math.random() * 10 + 5;
-            else if (r < 0.7) size = Math.random() * 20 + 10;
-            else size = Math.random() * 35 + 25;
+            size = Math.random() * 35 + 25;
         }
         
         this.particles.push({
@@ -70,8 +66,6 @@ class FlameSystem {
     }
 
     addBlueFlicker(source) {
-        if (this.isMobile) return; // Skip blue flickers on mobile entirely
-        
         this.blueFlickers.push({
             x: source.x + (Math.random() - 0.5) * 20,
             y: this.yBase - Math.random() * 15,
@@ -84,8 +78,6 @@ class FlameSystem {
     }
 
     addSteam(x, y) {
-        if (this.isMobile) return; // Skip steam on mobile
-        
         this.steamParticles.push({
             x: x, y: y,
             life: 1,
@@ -101,11 +93,50 @@ class FlameSystem {
         gsap.to(this, { colorShift: 1, duration: 4, ease: "power2.inOut" });
     }
 
+    // Get cached gradient or create new one - KEY OPTIMIZATION
+    getGradient(r, g, b, size, life, opacity) {
+        // Round values to reduce unique gradient count
+        const key = `${Math.round(r/5)*5},${Math.round(g/5)*5},${Math.round(b/5)*5},${Math.round(size/3)},${Math.round(life*10)}`;
+        
+        if (!this.gradientCache[key]) {
+            // Create offscreen canvas for this gradient
+            const offCanvas = document.createElement('canvas');
+            const maxSize = Math.ceil(size * 2);
+            offCanvas.width = maxSize;
+            offCanvas.height = maxSize;
+            const offCtx = offCanvas.getContext('2d');
+            
+            const cx = maxSize / 2;
+            const cy = maxSize / 2;
+            const gradient = offCtx.createRadialGradient(cx, cy, 0, cx, cy, size);
+            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity})`);
+            gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${opacity * 0.5})`);
+            gradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, ${opacity * 0.15})`);
+            gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+            
+            offCtx.fillStyle = gradient;
+            offCtx.beginPath();
+            offCtx.arc(cx, cy, size, 0, Math.PI * 2);
+            offCtx.fill();
+            
+            this.gradientCache[key] = offCanvas;
+        }
+        
+        return this.gradientCache[key];
+    }
+
     draw(intensityMultiplier = 1) {
         if (!intensityMultiplier) intensityMultiplier = 1;
         
-        // Mobile: fewer particles but still looks full
-        const baseCount = this.isStorm ? (this.isMobile ? 2 : 4) : (this.isMobile ? 4 : 7);
+        this.frameCount++;
+        
+        // Clear gradient cache every 120 frames to prevent memory leak
+        if (this.frameCount > 120) {
+            this.gradientCache = {};
+            this.frameCount = 0;
+        }
+        
+        const baseCount = this.isStorm ? 4 : 7;
         const count = Math.floor(baseCount * intensityMultiplier);
         
         for (let source of this.flameSources) {
@@ -115,11 +146,11 @@ class FlameSystem {
                 }
             }
             
-            if (!this.isMobile && this.isStorm && Math.random() < 0.08) {
+            if (this.isStorm && Math.random() < 0.08) {
                 this.addBlueFlicker(source);
             }
             
-            if (!this.isMobile && this.isStorm && Math.random() < 0.25) {
+            if (this.isStorm && Math.random() < 0.25) {
                 let steamX = source.x + (Math.random() - 0.5) * source.width;
                 let steamY = this.yBase + Math.random() * 20;
                 this.addSteam(steamX, steamY);
@@ -128,13 +159,10 @@ class FlameSystem {
 
         this.ctx.globalCompositeOperation = 'screen';
         
-        if (!this.isMobile) {
-            this.drawSteam();
-        }
-        
+        this.drawSteam();
         this.drawMainFlames(intensityMultiplier);
         
-        if (!this.isMobile && this.isStorm) {
+        if (this.isStorm) {
             this.drawBlueFlickers();
         }
         
@@ -154,10 +182,7 @@ class FlameSystem {
                 continue;
             }
             
-            let gradient = this.ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size);
-            gradient.addColorStop(0, `rgba(200, 210, 220, ${s.life * 0.15})`);
-            gradient.addColorStop(1, `rgba(200, 210, 220, 0)`);
-            this.ctx.fillStyle = gradient;
+            this.ctx.fillStyle = `rgba(200, 210, 220, ${s.life * 0.15})`;
             this.ctx.beginPath();
             this.ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
             this.ctx.fill();
@@ -177,11 +202,7 @@ class FlameSystem {
                 continue;
             }
             
-            let gradient = this.ctx.createRadialGradient(bf.x, bf.y, 0, bf.x, bf.y, bf.size);
-            gradient.addColorStop(0, `rgba(150, 200, 255, ${bf.life * 0.8})`);
-            gradient.addColorStop(0.5, `rgba(100, 160, 255, ${bf.life * 0.3})`);
-            gradient.addColorStop(1, `rgba(50, 100, 255, 0)`);
-            this.ctx.fillStyle = gradient;
+            this.ctx.fillStyle = `rgba(150, 200, 255, ${bf.life * 0.8})`;
             this.ctx.beginPath();
             this.ctx.arc(bf.x, bf.y, bf.size * bf.life, 0, Math.PI * 2);
             this.ctx.fill();
@@ -189,12 +210,6 @@ class FlameSystem {
     }
 
     drawMainFlames(intensityMultiplier) {
-        // Mobile: limit max particles to prevent lag
-        const maxParticles = this.isMobile ? 150 : 500;
-        while (this.particles.length > maxParticles) {
-            this.particles.shift();
-        }
-        
         for (let i = 0; i < this.particles.length; i++) {
             let p = this.particles[i];
 
@@ -243,24 +258,15 @@ class FlameSystem {
             let opacity = p.life * 0.55 * intensityMultiplier;
             if (!this.isStorm) opacity = p.life * 0.85;
             
-            // Mobile: simpler but still good-looking rendering
-            if (this.isMobile) {
-                let alpha = opacity * 0.7;
-                this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, p.size * p.life * 0.85, 0, Math.PI * 2);
-                this.ctx.fill();
-            } else {
-                this.ctx.beginPath();
-                let gradient = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * p.life);
-                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity})`);
-                gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${opacity * 0.5})`);
-                gradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, ${opacity * 0.15})`);
-                gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-                this.ctx.fillStyle = gradient;
-                this.ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-                this.ctx.fill();
-            }
+            const particleSize = p.size * p.life;
+            
+            // Use cached gradient (drawImage is way faster than createRadialGradient)
+            const cachedGradient = this.getGradient(r, g, b, particleSize, p.life, opacity);
+            this.ctx.drawImage(
+                cachedGradient, 
+                p.x - cachedGradient.width / 2, 
+                p.y - cachedGradient.height / 2
+            );
         }
     }
 }

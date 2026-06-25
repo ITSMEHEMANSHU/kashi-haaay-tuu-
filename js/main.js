@@ -205,7 +205,7 @@ i hope you get to know it again that you ain't late just you're taking time for 
 
 const SECOND_MESSAGE_PART2 = `see i don't know right now if telling you this you understood that you're not less than anyone .....from this i want you to know that you are much better than everyone....i'm always with you ....the way you allow me to think out of the box the same way i want you to know abt your own strength .....plus you deserve this gap after that much hardwork also on high scoring....
 
-i can understand you are doing lot of work though but don't have any overload on your mind by worrying.....and allow me to keep few things regarding to learning a surprise everytime you ask me wyd i can't go on saying "planning our way to cracking an internship with high ppto".....`;
+i can understand you are doing lot of work though but don't have any overload on your mind by worrying.....and allow me to keep few things regarding to learning a surprise everytime you ask me wyd i can't go on saying "planning our way to cracking an internship with high ppo".....`;
 
 const SECOND_MESSAGE_PART3 = `you ain't going to clg to be part of a group ...the students there must realise you're far above their level....knowing you in the competition must make them lose the hope....the way you want me to be strong and successful this is what i want you to be..... 
 
